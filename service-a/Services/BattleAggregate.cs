@@ -3,11 +3,6 @@ using ServiceA.Models;
 
 namespace ServiceA.Services;
 
-/// <summary>
-/// Agregado de Combate que reconstruye su estado actual mediante replaying de eventos.
-/// Cumple la regla de negocio de Event Sourcing requerida para Persona 2:
-/// "Validar: no realizar acción si al hacer replaying la batalla ya culminó o no es válida."
-/// </summary>
 public class BattleAggregate
 {
     public string BattleId { get; private set; } = string.Empty;
@@ -25,9 +20,6 @@ public class BattleAggregate
     public string? Winner => !IsFinished ? null : (HeroCurrentHp > 0 ? HeroName : EnemyName);
     public string? Defeated => !IsFinished ? null : (HeroCurrentHp <= 0 ? HeroName : EnemyName);
 
-    /// <summary>
-    /// Aplica un evento al estado interno del combate (Replaying / Fold).
-    /// </summary>
     public void Apply(string eventType, string json)
     {
         switch (eventType)
@@ -79,9 +71,6 @@ public class BattleAggregate
         }
     }
 
-    /// <summary>
-    /// Valida si es posible realizar un ataque según el estado reconstruido por replaying.
-    /// </summary>
     public bool CanAttack(string attacker, string target, out string? error)
     {
         if (!Exists)
@@ -100,9 +89,6 @@ public class BattleAggregate
         return true;
     }
 
-    /// <summary>
-    /// Valida si es posible realizar una curación según el estado reconstruido por replaying.
-    /// </summary>
     public bool CanHeal(string target, out string? error)
     {
         if (!Exists)

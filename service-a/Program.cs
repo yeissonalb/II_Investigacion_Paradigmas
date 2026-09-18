@@ -4,11 +4,9 @@ using ServiceA.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Configuración de puerto (3001 por contrato)
 var port = Environment.GetEnvironmentVariable("PORT") ?? "3001";
 builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
 
-// Configuración de EventStoreDB (variable EVENTSTORE_URL con fallback local)
 var eventStoreUrl = Environment.GetEnvironmentVariable("EVENTSTORE_URL") 
     ?? builder.Configuration["EventStore:ConnectionString"] 
     ?? "esdb://localhost:2113?tls=false";
@@ -27,15 +25,8 @@ builder.Services.AddScoped<EventStoreService>();
 
 var app = builder.Build();
 
-// Health check para Docker
 app.MapGet("/health", () => Results.Ok(new { status = "healthy", service = "service-a", port }));
 
-// =========================================================================
-// ENDPOINTS DE COMANDOS (POST) - PERSONA 2
-// NOTA: El endpoint GET de lectura/saldo pertenece al Servicio B (Persona 3)
-// =========================================================================
-
-// 1. Iniciar un nuevo combate
 app.MapPost("/battles/start", async (StartBattleRequest? request, EventStoreService esService) =>
 {
     var battleId = string.IsNullOrWhiteSpace(request?.BattleId) 
@@ -44,7 +35,6 @@ app.MapPost("/battles/start", async (StartBattleRequest? request, EventStoreServ
 
     var streamName = EventStoreService.GetStreamName(battleId);
 
-    // Verificar si ya existe mediante Replay
     var existingBattle = await esService.ReplayBattleAsync(battleId);
     if (existingBattle.Exists)
     {
@@ -67,7 +57,6 @@ app.MapPost("/battles/start", async (StartBattleRequest? request, EventStoreServ
 
     await esService.AppendEventAsync(battleId, nameof(BattleStarted), battleStartedEvent);
 
-    // LOG CLARO PARA DEMO
     Console.ForegroundColor = ConsoleColor.Green;
     Console.WriteLine($"[Service-A] Append BattleStarted {streamName} {heroName} ({heroHp} HP) vs {enemyName} ({enemyHp} HP)");
     Console.ResetColor();
@@ -82,19 +71,16 @@ app.MapPost("/battles/start", async (StartBattleRequest? request, EventStoreServ
     });
 });
 
-// 2. Realizar un ataque (Validación previa con Replay)
 app.MapPost("/battles/{id}/attack", async (string id, AttackRequest? request, EventStoreService esService) =>
 {
     var streamName = EventStoreService.GetStreamName(id);
 
-    // REPLAYING: Reconstrucción del estado en memoria
     var battle = await esService.ReplayBattleAsync(id);
 
     var attacker = string.IsNullOrWhiteSpace(request?.Attacker) ? "Hero" : request.Attacker;
     var isAttackerHero = attacker.Equals("Hero", StringComparison.OrdinalIgnoreCase) || attacker.Equals(battle.HeroName, StringComparison.OrdinalIgnoreCase);
     var target = isAttackerHero ? battle.EnemyName : battle.HeroName;
 
-    // Validación de negocio mediante Replaying
     if (!battle.CanAttack(attacker, target, out var validationError))
     {
         Console.ForegroundColor = ConsoleColor.Red;
@@ -110,7 +96,6 @@ app.MapPost("/battles/{id}/attack", async (string id, AttackRequest? request, Ev
         });
     }
 
-    // Cálculo de daño
     var targetCurrentHp = isAttackerHero ? battle.EnemyCurrentHp : battle.HeroCurrentHp;
     var targetMaxHp = isAttackerHero ? battle.EnemyMaxHp : battle.HeroMaxHp;
     var damage = request?.Damage is > 0 ? request.Damage.Value : Random.Shared.Next(15, 30);
@@ -129,7 +114,6 @@ app.MapPost("/battles/{id}/attack", async (string id, AttackRequest? request, Ev
 
     await esService.AppendEventAsync(id, nameof(AttackPerformed), attackEvent);
 
-    // LOG CLARO PARA DEMO
     Console.ForegroundColor = ConsoleColor.Cyan;
     Console.WriteLine($"[Service-A] Append AttackPerformed {streamName} {attacker} dealt {damage} damage to {target} (Remaining HP: {remainingHp}/{targetMaxHp}){(isCritical ? " [¡CRÍTICO!]" : "")}");
     if (remainingHp <= 0)
@@ -154,17 +138,14 @@ app.MapPost("/battles/{id}/attack", async (string id, AttackRequest? request, Ev
     });
 });
 
-// 3. Curarse / Usar habilidad (Validación previa con Replay)
 app.MapPost("/battles/{id}/heal", async (string id, HealRequest? request, EventStoreService esService) =>
 {
     var streamName = EventStoreService.GetStreamName(id);
 
-    // REPLAYING: Reconstrucción del estado en memoria
     var battle = await esService.ReplayBattleAsync(id);
 
     var target = string.IsNullOrWhiteSpace(request?.Target) ? "Hero" : request.Target;
 
-    // Validación de negocio mediante Replaying
     if (!battle.CanHeal(target, out var validationError))
     {
         Console.ForegroundColor = ConsoleColor.Red;
@@ -198,7 +179,6 @@ app.MapPost("/battles/{id}/heal", async (string id, HealRequest? request, EventS
 
     await esService.AppendEventAsync(id, nameof(HealUsed), healEvent);
 
-    // LOG CLARO PARA DEMO
     Console.ForegroundColor = ConsoleColor.Magenta;
     Console.WriteLine($"[Service-A] Append HealUsed {streamName} {targetName} healed +{effectiveHeal} HP (Current HP: {newHp}/{maxHp})");
     Console.ResetColor();

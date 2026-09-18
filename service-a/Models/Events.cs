@@ -2,10 +2,6 @@ using System.Text.Json.Serialization;
 
 namespace ServiceA.Models;
 
-// ==========================================
-// EVENTOS DE DOMINIO (Contrato de Event Sourcing)
-// ==========================================
-
 public record BattleStarted(
     [property: JsonPropertyName("battleId")] string BattleId,
     [property: JsonPropertyName("heroName")] string HeroName,
@@ -33,10 +29,6 @@ public record HealUsed(
     [property: JsonPropertyName("timestamp")] DateTime Timestamp
 );
 
-// ==========================================
-// DTOs DE ENTRADA HTTP (Comandos POST)
-// ==========================================
-
 public record StartBattleRequest(
     string? BattleId,
     string? HeroName,
@@ -46,11 +38,11 @@ public record StartBattleRequest(
 );
 
 public record AttackRequest(
-    string? Attacker, // "Hero" o "Enemy" (por defecto "Hero")
-    int? Damage       // Daño opcional, si no se envía se calcula automático (15-30)
+    string? Attacker,
+    int? Damage
 );
 
 public record HealRequest(
-    string? Target,   // "Hero" o "Enemy" (por defecto "Hero")
-    int? Amount       // Curación opcional, si no se envía se calcula automático (20)
+    string? Target,
+    int? Amount
 );

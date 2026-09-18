@@ -16,9 +16,6 @@ public class EventStoreService
         _logger = logger;
     }
 
-    /// <summary>
-    /// Normaliza el nombre del stream respetando el contrato acordado: battle-{id}
-    /// </summary>
     public static string GetStreamName(string battleId)
     {
         var cleanId = battleId.StartsWith("battle-", StringComparison.OrdinalIgnoreCase)
@@ -27,9 +24,6 @@ public class EventStoreService
         return $"battle-{cleanId}";
     }
 
-    /// <summary>
-    /// Lee todos los eventos del stream cronológicamente para reconstruir el estado actual en memoria (Replaying).
-    /// </summary>
     public async Task<BattleAggregate> ReplayBattleAsync(string battleId, CancellationToken ct = default)
     {
         var streamName = GetStreamName(battleId);
@@ -53,19 +47,14 @@ public class EventStoreService
         }
         catch (StreamNotFoundException)
         {
-            // El stream aún no ha sido creado en EventStoreDB
         }
         catch (Exception ex) when (ex.Message.Contains("not found", StringComparison.OrdinalIgnoreCase))
         {
-            // Manejo de compatibilidad en grpc
         }
 
         return aggregate;
     }
 
-    /// <summary>
-    /// Guarda un nuevo evento inmutable al final del stream en EventStoreDB.
-    /// </summary>
     public async Task AppendEventAsync(string battleId, string eventType, object eventData, CancellationToken ct = default)
     {
         var streamName = GetStreamName(battleId);
