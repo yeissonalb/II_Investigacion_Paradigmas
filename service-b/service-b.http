@@ -1,0 +1,24 @@
+@service_b_HostAddress = http://localhost:3002
+
+GET {{service_b_HostAddress}}/health
+Accept: application/json
+
+###
+
+GET {{service_b_HostAddress}}/battles
+Accept: application/json
+
+###
+
+GET {{service_b_HostAddress}}/battles/battle-demo-1
+Accept: application/json
+
+###
+
+GET {{service_b_HostAddress}}/battles/battle-demo-1/stats
+Accept: application/json
+
+###
+
+GET {{service_b_HostAddress}}/battles/battle-demo-1/history
+Accept: application/json
