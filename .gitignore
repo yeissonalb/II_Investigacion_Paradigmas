@@ -8,6 +8,10 @@ obj/
 .vscode/
 .idea/
 
+# Node / React
+node_modules/
+dist/
+
 # OS files
 .DS_Store
 Thumbs.db

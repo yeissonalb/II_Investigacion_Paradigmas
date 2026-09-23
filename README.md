@@ -1,7 +1,7 @@
 # Investigación II: Patrones y Mecanismos en Arquitecturas Distribuidas
 
 > **Curso:** Paradigmas de Investigación / Arquitecturas de Software  
-> **Tecnologías:** .NET 8, EventStoreDB, Docker, Docker Compose  
+> **Tecnologías:** .NET 9, React, Vite, EventStoreDB, Docker, Docker Compose  
 > **Integrantes:** Fatima Carrillo Garcia, Samir Campos Díaz, Maria del Mar Diaz Ruiz, Brayan José Pérez Balladares, Yeisson Alberto Villalobos Toruño
 
 ---
@@ -18,11 +18,12 @@ En las arquitecturas tradicionales orientadas a CRUD, las bases de datos guardan
 
 ## 2. Arquitectura o Diagrama
 
-La solución está compuesta por dos microservicios autónomos desarrollados en **.NET 8** coordinados a través de **EventStoreDB**:
+La solución está compuesta por un **frontend web**, dos microservicios autónomos desarrollados en **.NET 9** y **EventStoreDB**:
 
 ```
                                +-----------------------------+
-                               |     Cliente HTTP / cURL     |
+                               |   Frontend (Puerto 8080)    |
+                               |     o Cliente HTTP / cURL   |
                                +-----------------------------+
                                      |                 ^
                         1. POST      |                 | 4. GET
@@ -46,6 +47,7 @@ La solución está compuesta por dos microservicios autónomos desarrollados en 
 ### Componentes y Contrato de Integración:
 - **Service A (`service-a`, Puerto 3001):** Servicio de Escritura / Comandos. Recibe peticiones `POST`, reconstruye el estado previo reproduciendo los eventos del stream para validar reglas de negocio, y almacena los nuevos eventos.
 - **Service B (`service-b`, Puerto 3002):** Servicio de Lectura / Consultas. Mantiene una suscripción en segundo plano a EventStoreDB (`$all`), escucha los eventos conforme ocurren y actualiza una vista en memoria (*Read Model*) para responder peticiones `GET` en milisegundos.
+- **Frontend (`frontend`, Puerto 8080):** SPA en **React + Vite**. Envía comandos a Service A y lee el estado, estadísticas e historial proyectado desde Service B. Incluye un inspector CQRS para ver cada `POST` y `GET` en vivo.
 - **EventStoreDB (Puerto 2113):** Base de datos especializada en almacenamiento inmutable de eventos por stream y bus pub/sub en tiempo real.
 - **Convención de Streams y Eventos:**
   - Identificador de Stream: `battle-{id}` (o `account-{id}`).
@@ -59,45 +61,39 @@ La solución está compuesta por dos microservicios autónomos desarrollados en 
 
 ## 3. Cómo Ejecutar el Proyecto
 
-El proyecto está diseñado para levantarse de forma sencilla y reproducible sin necesidad de instalar bases de datos de forma manual.
+Una persona con **Git**, **Docker** y **Docker Compose** puede clonar el repositorio y levantar toda la solución, incluida EventStoreDB. No hay que instalar .NET, Node.js ni bases de datos a mano.
 
 ### Requisitos Previos:
-- Tener instalado **Git**, **Docker** y **Docker Compose**.
+- **Git**, **Docker** y **Docker Compose**.
 
-### Opción A: Ejecución con Docker Compose (Recomendada)
+### Ejecución reproducible (requerida)
 1. Clonar el repositorio y situarse en la raíz:
    ```bash
    git clone <url-del-repositorio>
    cd II_Investigacion_Paradigmas
    ```
-2. Levantar la infraestructura y los servicios:
-   ```bash
-   docker compose up -d
-   ```
-3. Verificar que los contenedores estén en ejecución:
-   ```bash
-   docker compose ps
-   ```
+2. Ejecutar el script:
+   - Windows: `.\run.ps1`
+   - Linux / macOS: `chmod +x run.sh && ./run.sh`
+3. El script internamente hace `docker compose pull`, `docker compose build` y `docker compose up -d`, y espera a que Service A y Service B respondan.
+4. Abrir el frontend: [http://localhost:8080](http://localhost:8080).
 
-### Opción B: Ejecución en Entorno Local (.NET SDK)
-1. Iniciar la base de datos de eventos:
-   ```bash
-   docker compose up -d eventstore
-   ```
-2. En una terminal, iniciar el **Servicio A** (Puerto 3001):
-   ```bash
-   dotnet run --project service-a/service-a.csproj
-   ```
-3. En una segunda terminal, iniciar el **Servicio B** (Puerto 3002):
-   ```bash
-   dotnet run --project service-b/service-b.csproj
-   ```
+Para detener todo: `docker compose down`.
 
 ---
 
 ## 4. Cómo Probar el Escenario
 
 A continuación se detalla el paso a paso para ejecutar las pruebas, observar quién inicia la acción, qué se transmite, qué servicio lo procesa y la evidencia de la comunicación:
+
+### Paso 0: Usar el frontend (recomendado para la demo)
+1. Abrir [http://localhost:8080](http://localhost:8080).
+2. Crear un combate (por ejemplo `battle-demo-1`, Guerrero vs Dragón).
+3. Atacar o curar desde la arena: cada botón hace `POST` a Service A (`:3001`).
+4. Observar cómo Service B (`:3002`) proyecta el estado, las estadísticas y el historial append-only.
+5. El inspector inferior muestra el último comando y la última consulta, evidenciando CQRS.
+
+Si se prefiere probar a mano con cURL:
 
 ### Paso 1: Comprobar el estado de salud de ambos servicios
 ```bash

@@ -25,7 +25,7 @@ Msc. Alex Villegas Carranza
 
 En el desarrollo tradicional de software empresarial predomina el paradigma CRUD (*Create, Read, Update, Delete*), donde las bases de datos relacionales almacenan únicamente el estado actual de las entidades, sobreescribiendo valores mediante instrucciones `UPDATE` destructivas. Si bien este enfoque es intuitivo y suficiente para aplicaciones básicas, introduce serias limitaciones en entornos distribuidos, financieros o de misión crítica donde la auditoría, la trazabilidad temporal y la intención del negocio son indispensables.
 
-El presente trabajo investiga el patrón arquitectónico **Event Sourcing** (combinado con **CQRS - Command Query Responsibility Segregation**), en el cual el estado de una entidad se modela como una secuencia ordenada e inmutable de eventos de dominio (*append-only log*). Para evidenciar su funcionamiento, se diseñó e implementó un sistema distribuido compuesto por dos microservicios autónomos en **.NET 8** coordinados a través de **EventStoreDB** y orquestados mediante **Docker Compose**.
+El presente trabajo investiga el patrón arquitectónico **Event Sourcing** (combinado con **CQRS - Command Query Responsibility Segregation**), en el cual el estado de una entidad se modela como una secuencia ordenada e inmutable de eventos de dominio (*append-only log*). Para evidenciar su funcionamiento, se diseñó e implementó un sistema distribuido compuesto por dos microservicios autónomos en **.NET 9** coordinados a través de **EventStoreDB** y orquestados mediante **Docker Compose**.
 
 ---
 

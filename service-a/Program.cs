@@ -22,8 +22,14 @@ var esClient = new EventStoreClient(esSettings);
 
 builder.Services.AddSingleton(esClient);
 builder.Services.AddScoped<EventStoreService>();
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+        policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod());
+});
 
 var app = builder.Build();
+app.UseCors();
 
 app.MapGet("/health", () => Results.Ok(new { status = "healthy", service = "service-a", port }));
 
@@ -98,7 +104,11 @@ app.MapPost("/battles/{id}/attack", async (string id, AttackRequest? request, Ev
 
     var targetCurrentHp = isAttackerHero ? battle.EnemyCurrentHp : battle.HeroCurrentHp;
     var targetMaxHp = isAttackerHero ? battle.EnemyMaxHp : battle.HeroMaxHp;
-    var damage = request?.Damage is > 0 ? request.Damage.Value : Random.Shared.Next(15, 30);
+    var damage = request?.Damage is > 0
+        ? request.Damage.Value
+        : isAttackerHero
+            ? Random.Shared.Next(15, 30)
+            : Random.Shared.Next(10, 38);
     var isCritical = damage >= 25;
     var remainingHp = Math.Max(0, targetCurrentHp - damage);
 
@@ -165,7 +175,11 @@ app.MapPost("/battles/{id}/heal", async (string id, HealRequest? request, EventS
     int maxHp = isTargetHero ? battle.HeroMaxHp : battle.EnemyMaxHp;
     string targetName = isTargetHero ? battle.HeroName : battle.EnemyName;
 
-    int requestedHeal = request?.Amount is > 0 ? request.Amount.Value : 20;
+    int requestedHeal = request?.Amount is > 0
+        ? request.Amount.Value
+        : isTargetHero
+            ? 20
+            : Random.Shared.Next(8, 28);
     int effectiveHeal = Math.Min(requestedHeal, maxHp - currentHp);
     int newHp = currentHp + effectiveHeal;
 
