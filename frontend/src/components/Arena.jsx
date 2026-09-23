@@ -1,5 +1,49 @@
+import { useState } from "react";
 import { LuClock } from "react-icons/lu";
+import {
+  GiBugNet,
+  GiCircle,
+  GiDragonHead,
+  GiElectric,
+  GiFairyWings,
+  GiFeather,
+  GiFire,
+  GiFist,
+  GiGhost,
+  GiGrass,
+  GiIceBolt,
+  GiMetalBar,
+  GiMoon,
+  GiMountainCave,
+  GiPoisonBottle,
+  GiPsychicWaves,
+  GiStonePile,
+  GiWaterDrop
+} from "react-icons/gi";
 import { FighterCard } from "./FighterCard.jsx";
+
+const TYPE_ICONS = {
+  normal: GiCircle,
+  fire: GiFire,
+  water: GiWaterDrop,
+  grass: GiGrass,
+  electric: GiElectric,
+  ice: GiIceBolt,
+  fighting: GiFist,
+  poison: GiPoisonBottle,
+  ground: GiMountainCave,
+  flying: GiFeather,
+  psychic: GiPsychicWaves,
+  bug: GiBugNet,
+  rock: GiStonePile,
+  ghost: GiGhost,
+  dragon: GiDragonHead,
+  dark: GiMoon,
+  steel: GiMetalBar,
+  fairy: GiFairyWings
+};
+
+const LIGHT_TYPES = new Set(["electric", "ice", "ground", "fairy", "steel"]);
 
 export function Arena({
   detail,
@@ -12,6 +56,8 @@ export function Arena({
   enemyFx,
   enemyStatus
 }) {
+  const moves = detail?.hero?.moves ?? [];
+  const [openMoves, setOpenMoves] = useState(false);
   const canAct = Boolean(detail) && !detail.isFinished && !busy;
   const statusClass = detail
     ? (detail.isFinished ? "done" : "live")
@@ -49,29 +95,69 @@ export function Arena({
         <FighterCard side="enemy" fighter={detail?.enemy} effect={enemyFx} />
       </div>
 
-      <div className="actions">
-        <div className="action-group">
-          <p>Tu turno</p>
-          <div className="btn-row">
-            <button className="btn btn-attack" disabled={!canAct} onClick={() => onAction("attack", "Hero")}>Atacar</button>
-            <button className="btn btn-heal" disabled={!canAct} onClick={() => onAction("heal", "Hero")}>Curar</button>
+      <div className={`actions${openMoves ? " moves-open" : ""}`}>
+        {!openMoves && (
+          <>
+            <div className="action-group">
+              <p>Tu turno</p>
+              <div className="btn-row">
+                <button
+                  className="btn btn-attack"
+                  disabled={!canAct}
+                  onClick={() => (moves.length ? setOpenMoves(true) : onAction("attack"))}
+                >
+                  Atacar
+                </button>
+                <button className="btn btn-heal" disabled={!canAct} onClick={() => onAction("heal", "Hero")}>Curar</button>
+              </div>
+            </div>
+            <div className="action-group enemy-ai">
+              <p>Rival</p>
+              <strong>{enemyStatus || "Espera su turno y responde solo."}</strong>
+            </div>
+            <label className="amount-field">
+              Daño o cura
+              <input
+                type="number"
+                min="1"
+                max="200"
+                placeholder="Aleatorio"
+                value={amount}
+                onChange={(event) => onAmountChange(event.target.value)}
+              />
+            </label>
+          </>
+        )}
+        {openMoves && moves.length > 0 && (
+          <div className="move-picker">
+            {moves.map((move) => {
+              const type = move.type || "normal";
+              const Icon = TYPE_ICONS[type] || GiCircle;
+              return (
+                <button
+                  key={move.name}
+                  type="button"
+                  className={`move-btn type-${type}${LIGHT_TYPES.has(type) ? " tone-dark" : ""}`}
+                  disabled={!canAct}
+                  onClick={() => {
+                    setOpenMoves(false);
+                    onAction("attack", move.name);
+                  }}
+                >
+                  <span className="move-glyph" aria-hidden="true"><Icon /></span>
+                  <span className="move-copy">
+                    <strong>{formatMove(move.name)}</strong>
+                    {move.accuracy ? <small>Precisión {move.accuracy}</small> : null}
+                  </span>
+                  <span className="move-power">
+                    <em>Poder</em>
+                    <b>{move.power}</b>
+                  </span>
+                </button>
+              );
+            })}
           </div>
-        </div>
-        <div className="action-group enemy-ai">
-          <p>Rival</p>
-          <strong>{enemyStatus || "Espera su turno y responde solo."}</strong>
-        </div>
-        <label className="amount-field">
-          Daño o cura
-          <input
-            type="number"
-            min="1"
-            max="200"
-            placeholder="Aleatorio"
-            value={amount}
-            onChange={(event) => onAmountChange(event.target.value)}
-          />
-        </label>
+        )}
       </div>
 
       <p className="arena-note">
@@ -99,7 +185,37 @@ function matchFighter(detail, name) {
   return null;
 }
 
+function formatMove(name) {
+  return String(name || "").replaceAll("-", " ");
+}
+
+function effectivenessNote(value, hit) {
+  if (hit === false) return "El ataque falló.";
+  if (value === 0) return "No afectó...";
+  if (typeof value === "number" && value < 1) return "No es muy efectivo...";
+  if (typeof value === "number" && value > 1) return "¡Es súper efectivo!";
+  return "";
+}
+
 function presentEvent(item, detail) {
+  if (item.eventType === "AttackPerformed" && item.moveName) {
+    const hit = item.hit !== false;
+    return {
+      tone: "attack",
+      fighter: matchFighter(detail, item.actorName),
+      lead: item.actorName || "",
+      verb: " usó ",
+      amount: "",
+      tail: formatMove(item.moveName),
+      moveType: item.moveType,
+      note: effectivenessNote(item.effectiveness, hit),
+      critical: Boolean(item.isCritical) && hit,
+      chip: "HP restante:",
+      value: item.targetRemainingHp ?? "",
+      damageLine: hit ? `${item.damage ?? 0} de daño` : ""
+    };
+  }
+
   const text = item.description || "";
   const attack = text.match(/^(.*?) hizo (\d+) de daño a (.*?) \(HP restante: (\d+)\)/);
   if (item.eventType === "AttackPerformed" && attack) {
@@ -201,8 +317,11 @@ export function EventTimeline({ history, detail }) {
                   {view.verb}
                   {view.amount && <b>{view.amount}</b>}
                   {view.tail}
-                  {view.critical ? " Crítico." : ""}
+                  {view.moveType && <span className={`type-badge type-${view.moveType}`}>{view.moveType}</span>}
                 </p>
+                {view.damageLine && <p className="damage-line">{view.damageLine}</p>}
+                {view.note && <p className="effect-note">{view.note}</p>}
+                {view.critical && <p className="effect-note">¡Golpe crítico!</p>}
                 {view.chip && (
                   <span className="event-chip">{view.chip} <b>{view.value}</b></span>
                 )}

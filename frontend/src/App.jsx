@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { api, describeCall } from "./api.js";
 import { Arena, EventTimeline, StatsGrid } from "./components/Arena.jsx";
 import { BattleList, StartBattleForm } from "./components/Sidebar.jsx";
-import { decideEnemyAction, rollEnemyDamage, rollEnemyDelay, rollEnemyHeal } from "./enemy.js";
+import { decideEnemyAction, pickEnemyMove, rollEnemyDamage, rollEnemyDelay, rollEnemyHeal } from "./enemy.js";
 import { getPokemon, getRandomPokemon } from "./pokeApi.js";
 
 const emptyForm = {
@@ -180,7 +180,7 @@ export default function App() {
     try {
       result = action === "heal"
         ? await api.heal(id, { target: "Enemy", amount: rollEnemyHeal() })
-        : await api.attack(id, { attacker: "Enemy", damage: rollEnemyDamage() });
+        : await api.attack(id, enemyAttackPayload(latest.enemy?.moves));
     } catch (error) {
       if (action !== "heal") {
         rememberCall(error.entry);
@@ -189,7 +189,7 @@ export default function App() {
       }
       try {
         action = "attack";
-        result = await api.attack(id, { attacker: "Enemy", damage: rollEnemyDamage() });
+        result = await api.attack(id, enemyAttackPayload(latest.enemy?.moves));
       } catch (retryError) {
         rememberCall(retryError.entry);
         setEnemyStatus(retryError.message);
@@ -198,8 +198,16 @@ export default function App() {
     }
 
     rememberCall(result.entry);
+    if (action === "attack") setEnemyFx("attack");
+    else setEnemyFx("heal");
     if (action === "attack") {
-      setEnemyStatus(`${name} ataca por ${result.data.damage} de daño${result.data.isCritical ? " (crítico)" : ""}`);
+      if (result.data.hit === false) {
+        setEnemyStatus(`${name} usó ${result.data.moveName} pero falló`);
+      } else if (result.data.moveName) {
+        setEnemyStatus(`${name} usó ${result.data.moveName} por ${result.data.damage} de daño${result.data.isCritical ? " (crítico)" : ""}`);
+      } else {
+        setEnemyStatus(`${name} ataca por ${result.data.damage} de daño${result.data.isCritical ? " (crítico)" : ""}`);
+      }
     } else {
       setEnemyStatus(`${name} se cura +${result.data.healedAmount} HP`);
     }
@@ -252,10 +260,24 @@ export default function App() {
         heroHp: hero.hp,
         heroPokemonId: hero.id,
         heroSprite: hero.sprite,
+        heroTypes: hero.types,
+        heroAttack: hero.stats.attack,
+        heroDefense: hero.stats.defense,
+        heroSpecialAttack: hero.stats.specialAttack,
+        heroSpecialDefense: hero.stats.specialDefense,
+        heroSpeed: hero.stats.speed,
+        heroMoves: hero.moves,
         enemyName: enemy.name,
         enemyHp: enemy.hp,
         enemyPokemonId: enemy.id,
-        enemySprite: enemy.sprite
+        enemySprite: enemy.sprite,
+        enemyTypes: enemy.types,
+        enemyAttack: enemy.stats.attack,
+        enemyDefense: enemy.stats.defense,
+        enemySpecialAttack: enemy.stats.specialAttack,
+        enemySpecialDefense: enemy.stats.specialDefense,
+        enemySpeed: enemy.stats.speed,
+        enemyMoves: enemy.moves
       };
       const { data, entry } = await api.startBattle(payload);
       rememberCall(entry);
@@ -280,18 +302,30 @@ export default function App() {
     }
   }
 
-  async function handleAction(action) {
+  function enemyAttackPayload(moves) {
+    const move = pickEnemyMove(moves);
+    return move
+      ? { attacker: "Enemy", moveName: move.name }
+      : { attacker: "Enemy", damage: rollEnemyDamage() };
+  }
+
+  async function handleAction(action, moveName) {
     if (!selectedId) return;
     setBusy(true);
     const value = Number(amount);
     const optionalAmount = Number.isFinite(value) && value > 0 ? value : undefined;
     const previousCount = history.length;
+    const usesMoves = (detail?.hero?.moves?.length ?? 0) > 0;
 
     try {
       const result = action === "attack"
-        ? await api.attack(selectedId, { attacker: "Hero", damage: optionalAmount })
+        ? await api.attack(selectedId, usesMoves
+          ? { attacker: "Hero", moveName }
+          : { attacker: "Hero", damage: optionalAmount })
         : await api.heal(selectedId, { target: "Hero", amount: optionalAmount });
       rememberCall(result.entry);
+      if (action === "attack") setHeroFx("attack");
+      else setHeroFx("heal");
       showToast("Evento enviado a EventStoreDB", true);
       const projected = await waitForProjection(selectedId, previousCount);
       if (projected.detail && !projected.detail.isFinished) {

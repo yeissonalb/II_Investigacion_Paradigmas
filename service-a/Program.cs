@@ -1,4 +1,5 @@
 using EventStore.Client;
+using ServiceA.Domain;
 using ServiceA.Models;
 using ServiceA.Services;
 
@@ -62,7 +63,21 @@ app.MapPost("/battles/start", async (StartBattleRequest? request, EventStoreServ
         request?.HeroPokemonId,
         string.IsNullOrWhiteSpace(request?.HeroSprite) ? null : request.HeroSprite,
         request?.EnemyPokemonId,
-        string.IsNullOrWhiteSpace(request?.EnemySprite) ? null : request.EnemySprite
+        string.IsNullOrWhiteSpace(request?.EnemySprite) ? null : request.EnemySprite,
+        request?.HeroTypes,
+        request?.HeroAttack,
+        request?.HeroDefense,
+        request?.HeroSpecialAttack,
+        request?.HeroSpecialDefense,
+        request?.HeroSpeed,
+        request?.HeroMoves,
+        request?.EnemyTypes,
+        request?.EnemyAttack,
+        request?.EnemyDefense,
+        request?.EnemySpecialAttack,
+        request?.EnemySpecialDefense,
+        request?.EnemySpeed,
+        request?.EnemyMoves
     );
 
     await esService.AppendEventAsync(battleId, nameof(BattleStarted), battleStartedEvent);
@@ -108,13 +123,58 @@ app.MapPost("/battles/{id}/attack", async (string id, AttackRequest? request, Ev
 
     var targetCurrentHp = isAttackerHero ? battle.EnemyCurrentHp : battle.HeroCurrentHp;
     var targetMaxHp = isAttackerHero ? battle.EnemyMaxHp : battle.HeroMaxHp;
-    var damage = request?.Damage is > 0
-        ? request.Damage.Value
-        : isAttackerHero
-            ? Random.Shared.Next(15, 30)
-            : Random.Shared.Next(10, 38);
-    var isCritical = damage >= 25;
-    var remainingHp = Math.Max(0, targetCurrentHp - damage);
+    int damage;
+    bool isCritical;
+    int remainingHp;
+    string? moveName = null;
+    string? moveType = null;
+    string? damageClass = null;
+    int? basePower = null;
+    double? effectiveness = null;
+    double? stab = null;
+    bool? hit = null;
+
+    if (!string.IsNullOrWhiteSpace(request?.MoveName))
+    {
+        if (!battle.TryGetMove(isAttackerHero, request.MoveName, out var move, out var moveError) || move is null)
+        {
+            return Results.BadRequest(new { error = moveError, battleId = id });
+        }
+
+        var outcome = MoveCombat.Resolve(
+            battle.AttackerProfile(isAttackerHero),
+            battle.DefenderProfile(isAttackerHero),
+            move,
+            CombatRoll.Create(Random.Shared));
+        damage = outcome.Damage;
+        isCritical = outcome.Critical;
+        remainingHp = Math.Max(0, targetCurrentHp - damage);
+        moveName = move.Name;
+        moveType = move.Type;
+        damageClass = move.DamageClass;
+        basePower = move.Power;
+        effectiveness = outcome.Effectiveness;
+        stab = outcome.Stab;
+        hit = outcome.Hit;
+    }
+    else if (battle.HasMoves(isAttackerHero))
+    {
+        return Results.BadRequest(new
+        {
+            error = "Debes elegir un movimiento de este Pokémon.",
+            battleId = id
+        });
+    }
+    else
+    {
+        damage = request?.Damage is > 0
+            ? request.Damage.Value
+            : isAttackerHero
+                ? Random.Shared.Next(15, 30)
+                : Random.Shared.Next(10, 38);
+        isCritical = damage >= 25;
+        remainingHp = Math.Max(0, targetCurrentHp - damage);
+    }
 
     var attackEvent = new AttackPerformed(
         id,
@@ -123,7 +183,14 @@ app.MapPost("/battles/{id}/attack", async (string id, AttackRequest? request, Ev
         damage,
         remainingHp,
         isCritical,
-        DateTime.UtcNow
+        DateTime.UtcNow,
+        moveName,
+        moveType,
+        damageClass,
+        basePower,
+        effectiveness,
+        stab,
+        hit
     );
 
     await esService.AppendEventAsync(id, nameof(AttackPerformed), attackEvent);
@@ -148,7 +215,12 @@ app.MapPost("/battles/{id}/attack", async (string id, AttackRequest? request, Ev
         targetRemainingHp = remainingHp,
         targetMaxHp,
         battleFinished = remainingHp <= 0,
-        winner = remainingHp <= 0 ? attacker : null
+        winner = remainingHp <= 0 ? attacker : null,
+        moveName,
+        moveType,
+        damageClass,
+        effectiveness,
+        hit
     });
 });
 

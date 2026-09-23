@@ -7,6 +7,13 @@ public class FighterView
     public int MaxHp { get; set; }
     public int? PokemonId { get; set; }
     public string? Sprite { get; set; }
+    public List<string>? Types { get; set; }
+    public int? Attack { get; set; }
+    public int? Defense { get; set; }
+    public int? SpecialAttack { get; set; }
+    public int? SpecialDefense { get; set; }
+    public int? Speed { get; set; }
+    public List<PokemonMove>? Moves { get; set; }
 }
 
 public class BattleStatsView
@@ -28,6 +35,18 @@ public class BattleHistoryItem
     public string EventType { get; set; } = string.Empty;
     public DateTime Timestamp { get; set; }
     public string Description { get; set; } = string.Empty;
+    public string? MoveName { get; set; }
+    public string? MoveType { get; set; }
+    public string? DamageClass { get; set; }
+    public int? BasePower { get; set; }
+    public int? Damage { get; set; }
+    public double? Effectiveness { get; set; }
+    public double? Stab { get; set; }
+    public bool? Hit { get; set; }
+    public bool IsCritical { get; set; }
+    public int? TargetRemainingHp { get; set; }
+    public string? ActorName { get; set; }
+    public string? TargetName { get; set; }
 }
 
 public class BattleReadModel
