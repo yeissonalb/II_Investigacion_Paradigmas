@@ -2,13 +2,12 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { api, describeCall } from "./api.js";
 import { Arena, EventTimeline, StatsGrid } from "./components/Arena.jsx";
 import { BattleList, StartBattleForm } from "./components/Sidebar.jsx";
-import { decideEnemyAction, rollEnemy, rollEnemyDamage, rollEnemyDelay, rollEnemyHeal } from "./enemy.js";
+import { decideEnemyAction, rollEnemyDamage, rollEnemyDelay, rollEnemyHeal } from "./enemy.js";
+import { getPokemon, getRandomPokemon } from "./pokeApi.js";
 
 const emptyForm = {
   battleId: "",
-  heroName: "Guerrero",
-  heroHp: 100,
-  enemyName: ""
+  pokemonQuery: ""
 };
 
 function sleep(ms) {
@@ -32,6 +31,10 @@ export default function App() {
   const [heroFx, setHeroFx] = useState("");
   const [enemyFx, setEnemyFx] = useState("");
   const [enemyStatus, setEnemyStatus] = useState("");
+  const [player, setPlayer] = useState(null);
+  const [pickerOpen, setPickerOpen] = useState(true);
+  const [searchError, setSearchError] = useState("");
+  const [opponentStatus, setOpponentStatus] = useState("");
 
   const previousHp = useRef({ hero: null, enemy: null });
 
@@ -203,20 +206,60 @@ export default function App() {
     await waitForProjection(id, previousCount);
   }
 
+  function loadedPlayerMatchesQuery() {
+    const query = form.pokemonQuery.trim().toLowerCase();
+    if (!player || !query) return false;
+    return player.name === query || String(player.id) === query;
+  }
+
+  async function handleSearch(identifier) {
+    const query = typeof identifier === "string" || typeof identifier === "number"
+      ? identifier
+      : form.pokemonQuery;
+    setBusy(true);
+    setSearchError("");
+    try {
+      const found = await getPokemon(query);
+      setPlayer(found);
+      setForm((current) => ({ ...current, pokemonQuery: found.name }));
+    } catch (error) {
+      setPlayer(null);
+      setSearchError(error.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function handleStart(event) {
     event.preventDefault();
     setBusy(true);
+    setSearchError("");
+    setOpponentStatus("");
     try {
-      const enemy = rollEnemy(form.enemyName);
+      const hero = loadedPlayerMatchesQuery() ? player : await getPokemon(form.pokemonQuery);
+      setPlayer(hero);
+      setForm((current) => ({ ...current, pokemonQuery: hero.name }));
+
+      setOpponentStatus("Buscando oponente...");
+      const enemy = await getRandomPokemon(hero.id);
+      if (enemy.id === hero.id) {
+        throw new Error("El oponente salió igual que tu Pokémon. Inténtalo de nuevo.");
+      }
+
       const payload = {
         battleId: form.battleId.trim() || undefined,
-        heroName: form.heroName || "Guerrero",
-        heroHp: Number(form.heroHp) || 100,
-        enemyName: enemy.enemyName,
-        enemyHp: enemy.enemyHp
+        heroName: hero.name,
+        heroHp: hero.hp,
+        heroPokemonId: hero.id,
+        heroSprite: hero.sprite,
+        enemyName: enemy.name,
+        enemyHp: enemy.hp,
+        enemyPokemonId: enemy.id,
+        enemySprite: enemy.sprite
       };
       const { data, entry } = await api.startBattle(payload);
       rememberCall(entry);
+      setOpponentStatus("");
       showToast(`Aparece ${data.enemy.name} con ${data.enemy.hp} HP`, true);
       setEnemyStatus(`${data.enemy.name} entra con ${data.enemy.hp} HP. Esperará su turno para atacar o curarse.`);
       previousHp.current = { hero: null, enemy: null };
@@ -228,7 +271,9 @@ export default function App() {
         await sleep(250);
       }
     } catch (error) {
-      rememberCall(error.entry);
+      setOpponentStatus("");
+      if (error.entry) rememberCall(error.entry);
+      else setSearchError(error.message);
       showToast(error.message);
     } finally {
       setBusy(false);
@@ -263,14 +308,14 @@ export default function App() {
   }
 
   return (
-    <>
+    <div className="app-shell">
       <div className="bg-glow" />
       <header className="topbar">
         <div className="brand">
-          <span className="brand-mark" aria-hidden="true">⚔</span>
+          <span className="brand-mark" aria-hidden="true"><span className="pokeball" /></span>
           <div>
             <h1>Event Arena</h1>
-            <p>Event Sourcing + CQRS · Combate por turnos</p>
+            <p>Elige tu Pokémon, combate y revisa cada evento</p>
           </div>
         </div>
         <div className="health-cluster">
@@ -283,8 +328,19 @@ export default function App() {
         </div>
       </header>
 
-      <main className="layout">
-        <aside className="panel sidebar">
+      <main className={`layout ${pickerOpen ? "" : "picker-closed"}`}>
+        <aside className={`panel sidebar ${pickerOpen ? "" : "collapsed"}`}>
+          <button
+            type="button"
+            className="drawer-toggle"
+            aria-expanded={pickerOpen}
+            onClick={() => setPickerOpen((open) => !open)}
+          >
+            <span className="pokeball" aria-hidden="true" />
+            <span>{pickerOpen ? "Ocultar equipo" : "Equipo"}</span>
+          </button>
+          {pickerOpen && (
+          <>
           <BattleList
             battles={battles}
             selectedId={selectedId}
@@ -294,7 +350,18 @@ export default function App() {
               setSelectedId(id);
             }}
           />
-          <StartBattleForm form={form} onChange={setForm} onSubmit={handleStart} busy={busy} />
+          <StartBattleForm
+            form={form}
+            onChange={setForm}
+            onSearch={handleSearch}
+            onSubmit={handleStart}
+            busy={busy}
+            player={loadedPlayerMatchesQuery() ? player : null}
+            searchError={searchError}
+            opponentStatus={opponentStatus}
+          />
+          </>
+          )}
         </aside>
 
         <Arena
@@ -310,7 +377,7 @@ export default function App() {
         />
 
         <aside className="panel sidecar">
-          <EventTimeline history={history} />
+          <EventTimeline history={history} detail={detail} />
           <StatsGrid stats={stats} />
         </aside>
       </main>
@@ -329,6 +396,6 @@ export default function App() {
       {toast && (
         <div className={`toast ${toast.ok ? "ok" : ""}`}>{toast.message}</div>
       )}
-    </>
+    </div>
   );
 }

@@ -8,7 +8,11 @@ public record BattleStarted(
     [property: JsonPropertyName("heroMaxHp")] int HeroMaxHp,
     [property: JsonPropertyName("enemyName")] string EnemyName,
     [property: JsonPropertyName("enemyMaxHp")] int EnemyMaxHp,
-    [property: JsonPropertyName("startedAt")] DateTime StartedAt
+    [property: JsonPropertyName("startedAt")] DateTime StartedAt,
+    [property: JsonPropertyName("heroPokemonId")] int? HeroPokemonId = null,
+    [property: JsonPropertyName("heroSprite")] string? HeroSprite = null,
+    [property: JsonPropertyName("enemyPokemonId")] int? EnemyPokemonId = null,
+    [property: JsonPropertyName("enemySprite")] string? EnemySprite = null
 );
 
 public record AttackPerformed(
@@ -34,7 +38,11 @@ public record StartBattleRequest(
     string? HeroName,
     int? HeroHp,
     string? EnemyName,
-    int? EnemyHp
+    int? EnemyHp,
+    int? HeroPokemonId = null,
+    string? HeroSprite = null,
+    int? EnemyPokemonId = null,
+    string? EnemySprite = null
 );
 
 public record AttackRequest(

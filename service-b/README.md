@@ -58,8 +58,8 @@ Respuesta esperada (estructura):
   "battleId": "battle-demo-1",
   "isFinished": false,
   "winner": null,
-  "hero": { "name": "Guerrero", "hp": 100, "maxHp": 100 },
-  "enemy": { "name": "Dragón", "hp": 70, "maxHp": 100 },
+  "hero": { "name": "charizard", "hp": 100, "maxHp": 100 },
+  "enemy": { "name": "blastoise", "hp": 70, "maxHp": 100 },
   "stats": {
     "turns": 1,
     "actions": 1,

@@ -185,9 +185,9 @@ El identificador de stream sigue la convención:
      ```json
      {
        "battleId": "battle-demo-1",
-       "heroName": "Guerrero",
+       "heroName": "charizard",
        "heroHp": 100,
-       "enemyName": "Dragón",
+       "enemyName": "blastoise",
        "enemyHp": 100,
        "startedAt": "2026-09-20T22:00:00Z"
      }
@@ -200,7 +200,7 @@ El identificador de stream sigue la convención:
      {
        "battleId": "battle-demo-1",
        "attacker": "Hero",
-       "target": "Dragón",
+       "target": "blastoise",
        "damage": 25,
        "targetRemainingHp": 75,
        "isCritical": false,
@@ -214,7 +214,7 @@ El identificador de stream sigue la convención:
      ```json
      {
        "battleId": "battle-demo-1",
-       "target": "Guerrero",
+       "target": "charizard",
        "amount": 15,
        "targetRemainingHp": 90,
        "occurredAt": "2026-09-20T22:02:00Z"

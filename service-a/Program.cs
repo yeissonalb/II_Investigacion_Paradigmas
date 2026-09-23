@@ -58,7 +58,11 @@ app.MapPost("/battles/start", async (StartBattleRequest? request, EventStoreServ
         heroHp,
         enemyName,
         enemyHp,
-        DateTime.UtcNow
+        DateTime.UtcNow,
+        request?.HeroPokemonId,
+        string.IsNullOrWhiteSpace(request?.HeroSprite) ? null : request.HeroSprite,
+        request?.EnemyPokemonId,
+        string.IsNullOrWhiteSpace(request?.EnemySprite) ? null : request.EnemySprite
     );
 
     await esService.AppendEventAsync(battleId, nameof(BattleStarted), battleStartedEvent);
@@ -72,8 +76,8 @@ app.MapPost("/battles/start", async (StartBattleRequest? request, EventStoreServ
         message = "Combate iniciado exitosamente",
         battleId,
         stream = streamName,
-        hero = new { name = heroName, hp = heroHp },
-        enemy = new { name = enemyName, hp = enemyHp }
+        hero = new { name = heroName, hp = heroHp, pokemonId = battleStartedEvent.HeroPokemonId, sprite = battleStartedEvent.HeroSprite },
+        enemy = new { name = enemyName, hp = enemyHp, pokemonId = battleStartedEvent.EnemyPokemonId, sprite = battleStartedEvent.EnemySprite }
     });
 });
 
