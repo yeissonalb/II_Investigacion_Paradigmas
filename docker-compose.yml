@@ -1,0 +1,58 @@
+services:
+  eventstore:
+    image: eventstore/eventstore:24.10
+    environment:
+      EVENTSTORE_CLUSTER_SIZE: "1"
+      EVENTSTORE_RUN_PROJECTIONS: "All"
+      EVENTSTORE_START_STANDARD_PROJECTIONS: "true"
+      EVENTSTORE_INSECURE: "true"
+      EVENTSTORE_ENABLE_ATOM_PUB_OVER_HTTP: "true"
+    ports:
+      - "${EVENTSTORE_PORT:-2113}:2113"
+    volumes:
+      - eventstore-data:/var/lib/eventstore
+      - eventstore-logs:/var/log/eventstore
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://127.0.0.1:2113/health/live || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 15s
+    restart: unless-stopped
+
+  service-a:
+    build: ./service-a
+    ports:
+      - "${SERVICE_A_PORT:-3001}:3001"
+    environment:
+      PORT: "3001"
+      EVENTSTORE_URL: ${EVENTSTORE_URL:-esdb://eventstore:2113?tls=false}
+    depends_on:
+      eventstore:
+        condition: service_healthy
+    restart: unless-stopped
+
+  service-b:
+    build: ./service-b
+    ports:
+      - "${SERVICE_B_PORT:-3002}:3002"
+    environment:
+      PORT: "3002"
+      EVENTSTORE_URL: ${EVENTSTORE_URL:-esdb://eventstore:2113?tls=false}
+    depends_on:
+      eventstore:
+        condition: service_healthy
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "${FRONTEND_PORT:-8080}:80"
+    depends_on:
+      - service-a
+      - service-b
+    restart: unless-stopped
+
+volumes:
+  eventstore-data:
+  eventstore-logs:

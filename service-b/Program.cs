@@ -24,8 +24,14 @@ var esClient = new EventStoreClient(esSettings);
 builder.Services.AddSingleton(esClient);
 builder.Services.AddSingleton<BattleReadStore>();
 builder.Services.AddHostedService<BattleProjectionService>();
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+        policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod());
+});
 
 var app = builder.Build();
+app.UseCors();
 
 app.MapGet("/health", (BattleReadStore store) => Results.Ok(new
 {
