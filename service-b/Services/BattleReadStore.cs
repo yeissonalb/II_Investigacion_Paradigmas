@@ -80,7 +80,14 @@ public class BattleReadStore
                 Hp = started.HeroMaxHp,
                 MaxHp = started.HeroMaxHp,
                 PokemonId = started.HeroPokemonId,
-                Sprite = started.HeroSprite
+                Sprite = started.HeroSprite,
+                Types = started.HeroTypes,
+                Attack = started.HeroAttack,
+                Defense = started.HeroDefense,
+                SpecialAttack = started.HeroSpecialAttack,
+                SpecialDefense = started.HeroSpecialDefense,
+                Speed = started.HeroSpeed,
+                Moves = started.HeroMoves
             };
             model.Enemy = new FighterView
             {
@@ -88,7 +95,14 @@ public class BattleReadStore
                 Hp = started.EnemyMaxHp,
                 MaxHp = started.EnemyMaxHp,
                 PokemonId = started.EnemyPokemonId,
-                Sprite = started.EnemySprite
+                Sprite = started.EnemySprite,
+                Types = started.EnemyTypes,
+                Attack = started.EnemyAttack,
+                Defense = started.EnemyDefense,
+                SpecialAttack = started.EnemySpecialAttack,
+                SpecialDefense = started.EnemySpecialDefense,
+                Speed = started.EnemySpeed,
+                Moves = started.EnemyMoves
             };
             model.IsFinished = false;
             model.Winner = null;
@@ -152,13 +166,31 @@ public class BattleReadStore
 
             RefreshOutcome(model);
             model.UpdatedAt = timestamp;
+            var actorName = ResolveName(model, attack.Attacker);
+            var targetName = ResolveName(model, attack.Target);
+            var description = attack.MoveName is null
+                ? $"{actorName} hizo {attack.Damage} de daño a {targetName} (HP restante: {attack.TargetRemainingHp}){(attack.IsCritical ? " [CRÍTICO]" : string.Empty)}"
+                : attack.Hit == false
+                    ? $"{actorName} usó {attack.MoveName} pero el ataque falló."
+                    : $"{actorName} usó {attack.MoveName} y causó {attack.Damage} de daño a {targetName} (HP restante: {attack.TargetRemainingHp})";
             model.History.Add(new BattleHistoryItem
             {
                 EventNumber = eventNumber,
                 EventType = nameof(AttackPerformed),
                 Timestamp = timestamp,
-                Description = $"{ResolveName(model, attack.Attacker)} hizo {attack.Damage} de daño a {ResolveName(model, attack.Target)}" +
-                              $" (HP restante: {attack.TargetRemainingHp}){(attack.IsCritical ? " [CRÍTICO]" : string.Empty)}"
+                Description = description,
+                MoveName = attack.MoveName,
+                MoveType = attack.MoveType,
+                DamageClass = attack.DamageClass,
+                BasePower = attack.BasePower,
+                Damage = attack.Damage,
+                Effectiveness = attack.Effectiveness,
+                Stab = attack.Stab,
+                Hit = attack.Hit,
+                IsCritical = attack.IsCritical,
+                TargetRemainingHp = attack.TargetRemainingHp,
+                ActorName = actorName,
+                TargetName = targetName
             });
         }
     }
@@ -344,7 +376,19 @@ public class BattleReadStore
                         EventNumber = item.EventNumber,
                         EventType = item.EventType,
                         Timestamp = item.Timestamp,
-                        Description = item.Description
+                        Description = item.Description,
+                        MoveName = item.MoveName,
+                        MoveType = item.MoveType,
+                        DamageClass = item.DamageClass,
+                        BasePower = item.BasePower,
+                        Damage = item.Damage,
+                        Effectiveness = item.Effectiveness,
+                        Stab = item.Stab,
+                        Hit = item.Hit,
+                        IsCritical = item.IsCritical,
+                        TargetRemainingHp = item.TargetRemainingHp,
+                        ActorName = item.ActorName,
+                        TargetName = item.TargetName
                     })
                     .ToList()
             };
@@ -357,7 +401,14 @@ public class BattleReadStore
         Hp = fighter.Hp,
         MaxHp = fighter.MaxHp,
         PokemonId = fighter.PokemonId,
-        Sprite = fighter.Sprite
+        Sprite = fighter.Sprite,
+        Types = fighter.Types,
+        Attack = fighter.Attack,
+        Defense = fighter.Defense,
+        SpecialAttack = fighter.SpecialAttack,
+        SpecialDefense = fighter.SpecialDefense,
+        Speed = fighter.Speed,
+        Moves = fighter.Moves
     };
 
     private static BattleStatsView CopyStats(BattleStatsView stats) => new()

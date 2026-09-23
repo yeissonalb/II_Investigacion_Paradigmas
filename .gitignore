@@ -12,6 +12,9 @@ obj/
 node_modules/
 dist/
 
+# Pruebas locales del combate
+tests/
+
 # OS files
 .DS_Store
 Thumbs.db
