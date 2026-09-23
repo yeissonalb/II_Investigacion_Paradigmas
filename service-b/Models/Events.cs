@@ -2,6 +2,15 @@ using System.Text.Json.Serialization;
 
 namespace ServiceB.Models;
 
+public record PokemonMove(
+    [property: JsonPropertyName("name")] string Name,
+    [property: JsonPropertyName("type")] string Type,
+    [property: JsonPropertyName("power")] int Power,
+    [property: JsonPropertyName("accuracy")] int? Accuracy,
+    [property: JsonPropertyName("priority")] int Priority,
+    [property: JsonPropertyName("damageClass")] string DamageClass
+);
+
 public record BattleStarted(
     [property: JsonPropertyName("battleId")] string BattleId,
     [property: JsonPropertyName("heroName")] string HeroName,
@@ -12,7 +21,21 @@ public record BattleStarted(
     [property: JsonPropertyName("heroPokemonId")] int? HeroPokemonId = null,
     [property: JsonPropertyName("heroSprite")] string? HeroSprite = null,
     [property: JsonPropertyName("enemyPokemonId")] int? EnemyPokemonId = null,
-    [property: JsonPropertyName("enemySprite")] string? EnemySprite = null
+    [property: JsonPropertyName("enemySprite")] string? EnemySprite = null,
+    [property: JsonPropertyName("heroTypes")] List<string>? HeroTypes = null,
+    [property: JsonPropertyName("heroAttack")] int? HeroAttack = null,
+    [property: JsonPropertyName("heroDefense")] int? HeroDefense = null,
+    [property: JsonPropertyName("heroSpecialAttack")] int? HeroSpecialAttack = null,
+    [property: JsonPropertyName("heroSpecialDefense")] int? HeroSpecialDefense = null,
+    [property: JsonPropertyName("heroSpeed")] int? HeroSpeed = null,
+    [property: JsonPropertyName("heroMoves")] List<PokemonMove>? HeroMoves = null,
+    [property: JsonPropertyName("enemyTypes")] List<string>? EnemyTypes = null,
+    [property: JsonPropertyName("enemyAttack")] int? EnemyAttack = null,
+    [property: JsonPropertyName("enemyDefense")] int? EnemyDefense = null,
+    [property: JsonPropertyName("enemySpecialAttack")] int? EnemySpecialAttack = null,
+    [property: JsonPropertyName("enemySpecialDefense")] int? EnemySpecialDefense = null,
+    [property: JsonPropertyName("enemySpeed")] int? EnemySpeed = null,
+    [property: JsonPropertyName("enemyMoves")] List<PokemonMove>? EnemyMoves = null
 );
 
 public record AttackPerformed(
@@ -22,7 +45,14 @@ public record AttackPerformed(
     [property: JsonPropertyName("damage")] int Damage,
     [property: JsonPropertyName("targetRemainingHp")] int TargetRemainingHp,
     [property: JsonPropertyName("isCritical")] bool IsCritical,
-    [property: JsonPropertyName("timestamp")] DateTime Timestamp
+    [property: JsonPropertyName("timestamp")] DateTime Timestamp,
+    [property: JsonPropertyName("moveName")] string? MoveName = null,
+    [property: JsonPropertyName("moveType")] string? MoveType = null,
+    [property: JsonPropertyName("damageClass")] string? DamageClass = null,
+    [property: JsonPropertyName("basePower")] int? BasePower = null,
+    [property: JsonPropertyName("effectiveness")] double? Effectiveness = null,
+    [property: JsonPropertyName("stab")] double? Stab = null,
+    [property: JsonPropertyName("hit")] bool? Hit = null
 );
 
 public record HealUsed(

@@ -50,12 +50,25 @@ async function getSpeciesCount() {
   return speciesCount;
 }
 
-function mapPokemon(data) {
-  const hpStat = data.stats?.find((entry) => entry.stat?.name === "hp");
-  const hp = hpStat?.base_stat;
-  const sprite = data.sprites?.front_default;
+function statValue(data, name) {
+  const value = data.stats?.find((entry) => entry.stat?.name === name)?.base_stat;
+  return Number.isFinite(value) ? value : null;
+}
 
-  if (!data.id || !data.name || !Number.isFinite(hp) || hp <= 0 || !sprite) {
+function mapPokemon(data) {
+  const hp = statValue(data, "hp");
+  const attack = statValue(data, "attack");
+  const defense = statValue(data, "defense");
+  const specialAttack = statValue(data, "special-attack");
+  const specialDefense = statValue(data, "special-defense");
+  const speed = statValue(data, "speed");
+  const sprite = data.sprites?.front_default;
+  const types = [...(data.types || [])]
+    .sort((left, right) => left.slot - right.slot)
+    .map((entry) => entry.type?.name)
+    .filter(Boolean);
+
+  if (!data.id || !data.name || !hp || hp <= 0 || !sprite || !attack || !defense || !specialAttack || !specialDefense || !speed || !types.length) {
     throw new Error("PokéAPI devolvió datos incompletos para este Pokémon.");
   }
 
@@ -63,8 +76,56 @@ function mapPokemon(data) {
     id: data.id,
     name: data.name,
     hp,
-    sprite
+    sprite,
+    types,
+    stats: { hp, attack, defense, specialAttack, specialDefense, speed }
   };
+}
+
+function learnLevel(entry) {
+  const levels = (entry.version_group_details || [])
+    .map((detail) => detail.level_learned_at)
+    .filter((level) => level > 0);
+  return levels.length ? Math.min(...levels) : 1000;
+}
+
+export async function getMoveDetails(name) {
+  let response;
+  try {
+    response = await fetch(`${POKEAPI}/move/${encodeURIComponent(name)}`);
+  } catch {
+    return null;
+  }
+  if (!response.ok) return null;
+  const data = await response.json();
+  const damageClass = data.damage_class?.name;
+  if (data.power == null || (damageClass !== "physical" && damageClass !== "special") || !data.type?.name) {
+    return null;
+  }
+  return {
+    name: data.name,
+    type: data.type.name,
+    power: data.power,
+    accuracy: data.accuracy,
+    priority: data.priority ?? 0,
+    damageClass
+  };
+}
+
+export async function getOffensiveMoves(pokemon) {
+  const ordered = [...(pokemon.moves || [])].sort((left, right) => learnLevel(left) - learnLevel(right));
+  const selected = [];
+  let requests = 0;
+  for (const entry of ordered) {
+    if (selected.length >= 4 || requests >= 12) break;
+    requests += 1;
+    const move = await getMoveDetails(entry.move?.name);
+    if (move) selected.push(move);
+  }
+  if (!selected.length) {
+    throw new Error(`No se encontraron movimientos ofensivos para ${pokemon.name}.`);
+  }
+  return selected;
 }
 
 export async function getPokemon(identifier) {
@@ -85,7 +146,9 @@ export async function getPokemon(identifier) {
   }
 
   const data = await readJson(response, "PokéAPI no respondió correctamente. Inténtalo de nuevo.");
-  return mapPokemon(data);
+  const pokemon = mapPokemon(data);
+  pokemon.moves = await getOffensiveMoves(data);
+  return pokemon;
 }
 
 export async function getRandomPokemon(excludeId) {
