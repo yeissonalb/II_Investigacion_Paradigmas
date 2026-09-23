@@ -88,7 +88,7 @@ A continuación se detalla el paso a paso para ejecutar las pruebas, observar qu
 
 ### Paso 0: Usar el frontend (recomendado para la demo)
 1. Abrir [http://localhost:8080](http://localhost:8080).
-2. Crear un combate (por ejemplo `battle-demo-1`, Guerrero vs Dragón).
+2. Crear un combate (por ejemplo `battle-demo-1`, charizard vs blastoise).
 3. Atacar o curar desde la arena: cada botón hace `POST` a Service A (`:3001`).
 4. Observar cómo Service B (`:3002`) proyecta el estado, las estadísticas y el historial append-only.
 5. El inspector inferior muestra el último comando y la última consulta, evidenciando CQRS.
@@ -106,7 +106,7 @@ Enviamos un comando para inicializar el combate `battle-demo-1`:
 ```bash
 curl -X POST http://localhost:3001/battles/start \
   -H "Content-Type: application/json" \
-  -d "{\"battleId\":\"battle-demo-1\",\"heroName\":\"Guerrero\",\"heroHp\":100,\"enemyName\":\"Dragón\",\"enemyHp\":100}"
+  -d "{\"battleId\":\"battle-demo-1\",\"heroName\":\"charizard\",\"heroHp\":100,\"enemyName\":\"blastoise\",\"enemyHp\":100}"
 ```
 - **Quién inicia:** El cliente envía la petición a Service A.
 - **Qué ocurre:** Service A valida que el ID no exista y hace append del evento `BattleStarted` en el stream `battle-demo-1`.

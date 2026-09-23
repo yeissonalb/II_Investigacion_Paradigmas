@@ -78,13 +78,17 @@ public class BattleReadStore
             {
                 Name = started.HeroName,
                 Hp = started.HeroMaxHp,
-                MaxHp = started.HeroMaxHp
+                MaxHp = started.HeroMaxHp,
+                PokemonId = started.HeroPokemonId,
+                Sprite = started.HeroSprite
             };
             model.Enemy = new FighterView
             {
                 Name = started.EnemyName,
                 Hp = started.EnemyMaxHp,
-                MaxHp = started.EnemyMaxHp
+                MaxHp = started.EnemyMaxHp,
+                PokemonId = started.EnemyPokemonId,
+                Sprite = started.EnemySprite
             };
             model.IsFinished = false;
             model.Winner = null;
@@ -351,7 +355,9 @@ public class BattleReadStore
     {
         Name = fighter.Name,
         Hp = fighter.Hp,
-        MaxHp = fighter.MaxHp
+        MaxHp = fighter.MaxHp,
+        PokemonId = fighter.PokemonId,
+        Sprite = fighter.Sprite
     };
 
     private static BattleStatsView CopyStats(BattleStatsView stats) => new()

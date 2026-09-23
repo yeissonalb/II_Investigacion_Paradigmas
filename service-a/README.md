@@ -14,7 +14,7 @@ Este servicio es el encargado exclusivo del flujo de **escritura / comandos** en
 ### 2. Contrato de Eventos y Streams
 * **Stream ID:** `battle-{id}` (ej. `battle-demo-1`).
 * **Eventos generados:**
-  * `BattleStarted`: Inicializa el combate con los dos contendientes y sus vidas máximas.
+  * `BattleStarted`: Inicializa el combate con los dos Pokémon y sus vidas máximas.
   * `AttackPerformed`: Registra el daño infligido, vida restante y si fue golpe crítico.
   * `HealUsed`: Registra la cantidad de puntos de vida recuperados.
 
@@ -28,9 +28,9 @@ Este servicio es el encargado exclusivo del flujo de **escritura / comandos** en
   ```json
   {
     "battleId": "battle-1",
-    "heroName": "Guerrero",
+    "heroName": "charizard",
     "heroHp": 100,
-    "enemyName": "Dragón",
+    "enemyName": "blastoise",
     "enemyHp": 100
   }
   ```
@@ -71,34 +71,34 @@ Abre una terminal y ejecuta las siguientes solicitudes:
    ```bash
    curl -X POST http://localhost:3001/battles/start \
      -H "Content-Type: application/json" \
-     -d "{\"battleId\":\"battle-demo-1\",\"heroName\":\"Guerrero\",\"enemyName\":\"Dragón\"}"
+     -d "{\"battleId\":\"battle-demo-1\",\"heroName\":\"charizard\",\"enemyName\":\"blastoise\"}"
    ```
    *Observar en tu consola el log:*  
-   `[Service-A] Append BattleStarted battle-demo-1 Guerrero (100 HP) vs Dragón (100 HP)`
+   `[Service-A] Append BattleStarted battle-demo-1 charizard (100 HP) vs blastoise (100 HP)`
 
-2. **Atacar al enemigo:**
+2. **Atacar al Pokémon rival:**
    ```bash
    curl -X POST http://localhost:3001/battles/battle-demo-1/attack \
      -H "Content-Type: application/json" \
      -d "{\"attacker\":\"Hero\",\"damage\":30}"
    ```
    *Observar en tu consola el log:*  
-   `[Service-A] Append AttackPerformed battle-demo-1 Hero dealt 30 damage to Dragón (Remaining HP: 70/100)`
+   `[Service-A] Append AttackPerformed battle-demo-1 Hero dealt 30 damage to blastoise (Remaining HP: 70/100)`
 
-3. **Curar al héroe (o recibir contraataque y curarse):**
+3. **Curar a tu Pokémon (o recibir contraataque y curarse):**
    ```bash
-   # Enemigo contraataca
+   # El Pokémon rival contraataca
    curl -X POST http://localhost:3001/battles/battle-demo-1/attack \
      -H "Content-Type: application/json" \
      -d "{\"attacker\":\"Enemy\",\"damage\":25}"
 
-   # Héroe se cura
+   # Tu Pokémon se cura
    curl -X POST http://localhost:3001/battles/battle-demo-1/heal \
      -H "Content-Type: application/json" \
      -d "{\"target\":\"Hero\",\"amount\":20}"
    ```
    *Observar en tu consola el log:*  
-   `[Service-A] Append HealUsed battle-demo-1 Guerrero healed +20 HP (Current HP: 95/100)`
+   `[Service-A] Append HealUsed battle-demo-1 charizard healed +20 HP (Current HP: 95/100)`
 
 4. **Demostración de la regla de negocio con Replay (Ataque tras derrota):**
    *(Ejecutar ataques masivos hasta que la vida llegue a 0)*
@@ -114,4 +114,4 @@ Abre una terminal y ejecuta las siguientes solicitudes:
      -d "{\"attacker\":\"Hero\",\"damage\":10}"
    ```
    *Respuesta esperada:* Error `400 Bad Request` con mensaje:  
-   `"No se puede atacar. La batalla ya culminó. Ganador: 'Guerrero', derrotado: 'Dragón'."`
+   `"No se puede atacar. La batalla ya culminó. Ganador: 'charizard', derrotado: 'blastoise'."`
