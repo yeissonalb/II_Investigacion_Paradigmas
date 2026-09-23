@@ -122,6 +122,7 @@ Para asegurar que **Persona 2 (Servicio A - Comandos)** y **Persona 3 (Servicio 
 ### 6.1. Configuración de Red y Puertos
 - **Servicio A (Command):** Puerto `3001` (HTTP REST).
 - **Servicio B (Query):** Puerto `3002` (HTTP REST).
+- **Frontend:** Puerto `8080` (SPA React + Vite que envía comandos a A y consultas a B).
 - **EventStoreDB:** Puerto `2113` (HTTP Web UI y gRPC endpoint).
 - **URL EventStoreDB interna en Docker:** `esdb://eventstore:2113?tls=false`.
 - **URL EventStoreDB desde el host:** `esdb://localhost:2113?tls=false`.
