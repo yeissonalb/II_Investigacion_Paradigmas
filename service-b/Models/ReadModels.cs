@@ -5,6 +5,8 @@ public class FighterView
     public string Name { get; set; } = string.Empty;
     public int Hp { get; set; }
     public int MaxHp { get; set; }
+    public int? PokemonId { get; set; }
+    public string? Sprite { get; set; }
 }
 
 public class BattleStatsView
